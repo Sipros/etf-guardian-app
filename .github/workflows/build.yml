@@ -3,7 +3,7 @@ name: Build iOS IPA
 # Trigger: automatico su ogni push al branch main
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch: # Permette trigger manuale
 
 jobs:
