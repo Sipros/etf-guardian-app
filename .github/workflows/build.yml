@@ -41,6 +41,8 @@ jobs:
           else
             echo "✅ Workspace trovato: $WORKSPACE"
           fi
+      - name: Lista schemi disponibili
+        run: xcodebuild -workspace ios/etfguardianclean.xcworkspace -list
 
       # 8️⃣ Build iOS non firmato
       - run: |
