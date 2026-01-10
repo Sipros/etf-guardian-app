@@ -1,5 +1,8 @@
 name: ETF Guardian - Price Monitor
 
+# ETF Guardian Automated Price Monitoring System
+# Runs every 5 minutes to check prices and send notifications
+
 on:
   schedule:
     # Run every 5 minutes
