@@ -17,36 +17,35 @@ jobs:
         with:
           node-version: '18'
 
-      # 3️⃣ Install Expo CLI
+      # 3️⃣ Installa Expo CLI
       - run: npm install -g expo-cli
 
       # 4️⃣ Installa dipendenze npm
       - run: npm install
 
-      # 5️⃣ Prebuild progetto iOS (genera la cartella ios/)
+      # 5️⃣ Prebuild progetto iOS (genera ios/)
       - run: npx expo prebuild --platform ios --clean
 
       # 6️⃣ Installa CocoaPods
       - run: pod install
         working-directory: ios
-      # 6️⃣ Controlla che il workspace esista
-      # 6️⃣ Controlla che il workspace esista
+
+      # 7️⃣ Controlla che il workspace esista
       - name: Controlla workspace iOS
         run: |
-              WORKSPACE="ios/etf-guardian-clean.xcworkspace"
-              if [ ! -d "$WORKSPACE" ]; then
-              echo "❌ Workspace iOS non trovato: $WORKSPACE"
-              echo "Assicurati di aver eseguito 'npx expo prebuild --platform ios' correttamente."
-              exit 1
-               else
-              echo "✅ Workspace trovato: $WORKSPACE"
-               fi
+          WORKSPACE="ios/etfguardianclean.xcworkspace"
+          if [ ! -d "$WORKSPACE" ]; then
+            echo "❌ Workspace iOS non trovato: $WORKSPACE"
+            echo "Assicurati di aver eseguito 'npx expo prebuild --platform ios' correttamente."
+            exit 1
+          else
+            echo "✅ Workspace trovato: $WORKSPACE"
+          fi
 
-
-      # 7️⃣ Build iOS non firmata
+      # 8️⃣ Build iOS non firmato
       - run: |
           xcodebuild \
-            -workspace ios/etf-guardian-clean.xcworkspace \
+            -workspace ios/etfguardianclean.xcworkspace \
             -scheme "ETF Guardian" \
             -configuration Release \
             -sdk iphoneos \
@@ -56,14 +55,16 @@ jobs:
             BUILD_DIR=$(pwd)/ios/build
         shell: bash
 
-      # 8️⃣ Crea Payload e IPA
+      # 9️⃣ Crea Payload e IPA
       - run: mkdir -p ios/build/Release-iphoneos/Payload
       - run: mv ios/build/Release-iphoneos/ETF\ Guardian.app ios/build/Release-iphoneos/Payload/
       - run: zip -r ios/build/Release-iphoneos/ETF-Guardian.ipa ios/build/Release-iphoneos/Payload
 
-      # 9️⃣ Upload IPA come artifact su GitHub Actions
+      # 🔟 Upload IPA come artifact
       - uses: actions/upload-artifact@v4
         with:
           name: ETF-Guardian-iOS-IPA
           path: ios/build/Release-iphoneos/ETF-Guardian.ipa
 
+      # 1️⃣1️⃣ Mostra path IPA nei log
+      - run: echo "🎉 IPA pronto: ios/build/Release-iphoneos/ETF-Guardian.ipa"
