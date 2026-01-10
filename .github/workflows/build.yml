@@ -29,6 +29,19 @@ jobs:
       # 6️⃣ Installa CocoaPods
       - run: pod install
         working-directory: ios
+      # 6️⃣ Controlla che il workspace esista
+      # 6️⃣ Controlla che il workspace esista
+      - name: Controlla workspace iOS
+        run: |
+              WORKSPACE="ios/etf-guardian-clean.xcworkspace"
+              if [ ! -d "$WORKSPACE" ]; then
+              echo "❌ Workspace iOS non trovato: $WORKSPACE"
+              echo "Assicurati di aver eseguito 'npx expo prebuild --platform ios' correttamente."
+              exit 1
+               else
+              echo "✅ Workspace trovato: $WORKSPACE"
+               fi
+
 
       # 7️⃣ Build iOS non firmata
       - run: |
