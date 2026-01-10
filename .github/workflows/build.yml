@@ -33,7 +33,7 @@ jobs:
       # 7️⃣ Build iOS non firmato
       - run: |
           xcodebuild \
-            -workspace ios/ETF\ Guardian.xcworkspace \
+            -workspace ios/etf-guardian-clean.xcworkspace \
             -scheme "ETF Guardian" \
             -configuration Release \
             -sdk iphoneos \
