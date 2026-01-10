@@ -1,0 +1,66 @@
+name: Build iOS IPA
+
+# Trigger: automatico su ogni push al branch main
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Permette trigger manuale
+
+jobs:
+  build:
+    runs-on: macos-latest  # GitHub fornisce Mac gratis!
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Setup Expo CLI
+        run: npm install -g @expo/cli eas-cli
+        
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Install expo-dev-client
+        run: npx expo install expo-dev-client
+        
+      - name: Login to Expo
+        run: npx expo login -u ${{ secrets.EXPO_USERNAME }} -p ${{ secrets.EXPO_PASSWORD }}
+        
+      - name: Build iOS IPA (development)
+        run: eas build --platform ios --profile development --non-interactive
+        env:
+          EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+          EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          EXPO_PUBLIC_FIREBASE_APP_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_APP_ID }}
+          
+      - name: Find and Upload IPA
+        run: |
+          # Trova il file .ipa più recente
+          IPA_FILE=$(find . -name "*.ipa" -type f | head -n 1)
+          if [ -n "$IPA_FILE" ]; then
+            echo "Found IPA: $IPA_FILE"
+            echo "IPA_PATH=$IPA_FILE" >> $GITHUB_ENV
+          else
+            echo "No IPA file found"
+            exit 1
+          fi
+          
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-guardian-ios
+          path: ${{ env.IPA_PATH }}
+          retention-days: 30
+          
+      - name: Display build info
+        run: |
+          echo "🎉 Build completed!"
+          echo "📱 IPA file: ${{ env.IPA_PATH }}"
+          echo "⏰ Build time: $(date)"
+          echo "🔗 Download from Actions tab"
