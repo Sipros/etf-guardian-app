@@ -1,8 +1,6 @@
 name: Build iOS IPA
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -22,7 +20,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install Expo & EAS
         run: npm install -g @expo/cli eas-cli
@@ -30,10 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install expo-dev-client
-        run: npx expo install expo-dev-client
-
-      # ❌ eas init RIMOSSO (non si usa in CI)
+      - name: 🔑 Initialize EAS project (ONE TIME)
+        run: eas init --non-interactive
 
       - name: Build iOS (development)
         run: eas build --platform ios --profile development --non-interactive
