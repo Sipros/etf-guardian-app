@@ -1,0 +1,81 @@
+{
+  "portfolio_assets": {
+    "VOO": {
+      "symbol": "VOO",
+      "name": "Vanguard S&P 500",
+      "type": "ETF",
+      "data_inizio": "2026-01-10T01:29:50.205Z",
+      "prezzo_inizio": 638.31,
+      "massimo_attuale": 638.31,
+      "data_massimo": "2026-01-10T01:29:50.206Z",
+      "threshold_alert": 15,
+      "attivo": true,
+      "created_at": "2026-01-10T01:29:50.206Z",
+      "updated_at": "2026-01-10T01:29:50.206Z"
+    },
+    "BTC": {
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "type": "CRYPTO",
+      "data_inizio": "2026-01-10T01:29:50.206Z",
+      "prezzo_inizio": 90524.7,
+      "massimo_attuale": 90532.43,
+      "data_massimo": "2026-01-10T01:29:54.639Z",
+      "threshold_alert": 15,
+      "attivo": true,
+      "created_at": "2026-01-10T01:29:50.206Z",
+      "updated_at": "2026-01-10T01:29:54.639Z"
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "type": "CRYPTO",
+      "data_inizio": "2026-01-10T01:29:50.206Z",
+      "prezzo_inizio": 2280.75,
+      "massimo_attuale": 3085.2698,
+      "data_massimo": "2026-01-10T01:29:55.786Z",
+      "threshold_alert": 15,
+      "attivo": true,
+      "created_at": "2026-01-10T01:29:50.206Z",
+      "updated_at": "2026-01-10T01:29:55.786Z"
+    },
+    "BND": {
+      "symbol": "BND",
+      "name": "Vanguard Bond ETF",
+      "type": "ETF",
+      "data_inizio": "2026-01-10T01:29:50.206Z",
+      "prezzo_inizio": 76.42,
+      "massimo_attuale": 76.42,
+      "data_massimo": "2026-01-10T01:29:50.206Z",
+      "threshold_alert": 15,
+      "attivo": true,
+      "created_at": "2026-01-10T01:29:50.206Z",
+      "updated_at": "2026-01-10T01:29:50.206Z"
+    },
+    "SOL": {
+      "symbol": "SOL",
+      "name": "Solana",
+      "type": "CRYPTO",
+      "data_inizio": "2026-01-10T01:29:50.206Z",
+      "prezzo_inizio": 187.3,
+      "massimo_attuale": 187.3,
+      "data_massimo": "2026-01-10T01:29:50.206Z",
+      "threshold_alert": 15,
+      "attivo": true,
+      "created_at": "2026-01-10T01:29:50.206Z",
+      "updated_at": "2026-01-10T01:29:50.206Z"
+    }
+  },
+  "drawdown_alerts": [
+    {
+      "symbol": "SOL",
+      "asset_name": "Solana",
+      "drawdown": -27.43206620395089,
+      "threshold": 15,
+      "prezzo_corrente": 135.91974,
+      "massimo": 187.3,
+      "timestamp": "2026-01-10T01:29:56.850Z",
+      "notifica_inviata": true
+    }
+  ]
+}
