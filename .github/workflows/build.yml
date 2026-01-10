@@ -65,6 +65,3 @@ jobs:
         with:
           name: ETF-Guardian-iOS-IPA
           path: ios/build/Release-iphoneos/ETF-Guardian.ipa
-
-      # 1️⃣1️⃣ Mostra path IPA nei log
-      - run: echo "🎉 IPA pronto: ios/build/Release-iphoneos/ETF-Guardian.ipa"
