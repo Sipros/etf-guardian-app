@@ -30,9 +30,15 @@ jobs:
         run: |
          PODFILE="ios/Podfile"
          # Aggiunge use_modular_headers! subito sotto la piattaforma
-                 sed -i '' '/platform :ios/a\
-                 use_modular_headers!
-                 ' $PODFILE
+         sed -i '' '/platform :ios/a\
+         use_modular_headers!
+         ' $PODFILE
+         # Aggiunge deployment target
+         sed -i '' '/platform :ios/a\
+         target 'etfguardianclean' do
+         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+         end
+         ' $PODFILE
 
       - name: Installa CocoaPods
         run: |
@@ -55,16 +61,18 @@ jobs:
 
       # 8️⃣ Build iOS non firmato
       - run: |
-          xcodebuild \
-            -workspace ios/etfguardianclean.xcworkspace \
-            -scheme "etfguardianclean" \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            -allowProvisioningUpdates \
-            BUILD_DIR=$(pwd)/ios/build
-        shell: bash
+         xcodebuild \
+           -workspace ios/etfguardianclean.xcworkspace \
+           -scheme "etfguardianclean" \
+           -configuration Debug \
+           -sdk iphoneos \
+           CODE_SIGN_IDENTITY="" \
+           DEVELOPMENT_TEAM="" \
+           -allowProvisioningUpdates \
+           BUILD_DIR=$(pwd)/ios/build \
+           SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+           IPHONEOS_DEPLOYMENT_TARGET="15.0"
+           shell: bash
 
       # 9️⃣ Crea Payload e IPA
       - run: |
