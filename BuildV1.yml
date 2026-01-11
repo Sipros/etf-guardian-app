@@ -1,0 +1,94 @@
+name: Build ETF Guardian iOS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    env:
+      EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      EXPO_PUBLIC_FIREBASE_APP_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_APP_ID }}
+      YAHOO_FINANCE_API_KEY: ${{ secrets.YAHOO_FINANCE_API_KEY }}
+      COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "yarn"
+
+      # 3️⃣ Cache yarn dependencies
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+            ios/Pods
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      # 4️⃣ Install dependencies
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # 5️⃣ Install Expo CLI
+      - name: Install Expo CLI
+        run: yarn global add expo-cli
+
+      # 6️⃣ Prebuild native code
+      - name: Expo Prebuild
+        run: npx expo prebuild --platform ios --clean
+
+      # 7️⃣ Install CocoaPods
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      # 8️⃣ Clean previous build
+      - name: Clean build folder
+        run: rm -rf ios/build
+
+      # 9️⃣ Build Release iOS app
+      - name: Build Release iOS app
+        run: |
+          xcodebuild -workspace ios/etfguardianclean.xcworkspace \
+                     -scheme etfguardianclean \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     CODE_SIGN_IDENTITY="" \
+                     DEVELOPMENT_TEAM="" \
+                     BUILD_DIR=ios/build \
+                     clean build
+
+      # 🔟 Create Payload folder
+      - name: Create Payload folder
+        run: mkdir -p ios/build/Release-iphoneos/Payload
+
+      # 1️⃣1️⃣ Move app into Payload
+      - name: Move app into Payload
+        run: mv ios/build/Release-iphoneos/etfguardianclean.app ios/build/Release-iphoneos/Payload/
+
+      # 1️⃣2️⃣ Create unsigned IPA
+      - name: Create unsigned IPA
+        run: |
+          cd ios/build/Release-iphoneos
+          zip -r ETF-Guardian.ipa Payload
+
+      # 1️⃣3️⃣ Upload IPA as artifact
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: ETF-Guardian
+          path: ios/build/Release-iphoneos/ETF-Guardian.ipa
