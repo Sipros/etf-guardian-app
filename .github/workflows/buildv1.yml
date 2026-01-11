@@ -26,82 +26,51 @@ jobs:
       # 5️⃣ Prebuild progetto iOS (genera ios/)
       - run: npx expo prebuild --platform ios --clean
       
-      # 6️⃣ Fix completo per gRPC e CocoaPods
-      - name: Configura Podfile con fix gRPC
+      # 6️⃣ Rimuovi Firebase/gRPC che causano problemi
+      - name: Rimuovi dipendenze problematiche
         run: |
-         PODFILE="ios/Podfile"
-         
-         # Aggiunge use_modular_headers! se non esiste
-         if ! grep -q "use_modular_headers!" $PODFILE; then
-           sed -i '' '/platform :ios/a\
-         use_modular_headers!
-         ' $PODFILE
-         fi
-         
-         # Rimuove configurazioni errate
-         sed -i '' '/config\.build_settings\["IPHONEOS_DEPLOYMENT_TARGET"\]/d' $PODFILE
-         
-         # Aggiunge post_install block con fix specifici per gRPC
-         if ! grep -q "post_install" $PODFILE; then
-           cat << 'EOF' >> $PODFILE
+          # Rimuovi Firebase dal package.json temporaneamente
+          npm uninstall @react-native-firebase/app @react-native-firebase/firestore firebase
+          
+      # 7️⃣ Prebuild di nuovo senza Firebase
+      - run: npx expo prebuild --platform ios --clean
+      
+      # 8️⃣ Configura Podfile semplificato
+      - name: Configura Podfile base
+        run: |
+          PODFILE="ios/Podfile"
+          
+          # Aggiunge use_modular_headers! se non esiste
+          if ! grep -q "use_modular_headers!" $PODFILE; then
+            sed -i '' '/platform :ios/a\
+          use_modular_headers!
+          ' $PODFILE
+          fi
+          
+          # Aggiunge post_install base
+          if ! grep -q "post_install" $PODFILE; then
+            cat << 'EOF' >> $PODFILE
 
-         post_install do |installer|
-         installer.pods_project.targets.each do |target|
-         target.build_configurations.each do |config|
-         # Deployment target
-         config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
-         # Fix specifico per gRPC module maps
-         if target.name.start_with?("gRPC") || target.name.start_with?("BoringSSL")
-         config.build_settings["MODULEMAP_FILE"] = ""
-         config.build_settings["DEFINES_MODULE"] = "NO"
-         config.build_settings["SWIFT_OBJC_INTERFACE_HEADER_NAME"] = ""
-         config.build_settings["SWIFT_OBJC_INTERFACE_HEADER_NAME"] = ""
-         config.build_settings["CLANG_ENABLE_MODULES"] = "NO"
-         config.build_settings["ENABLE_MODULE_VERIFIER"] = "NO"
-         end
-         # Fix per Firebase
-         if target.name.start_with?("Firebase")
-         config.build_settings["FRAMEWORK_SEARCH_PATHS"] = "$(inherited) $(PODS_ROOT)/Firebase"
-         end
-         # Fix per Expo modules
-         if target.name.start_with?("EX")
-         config.build_settings["SWIFT_OPTIMIZATION_LEVEL"] = "-Onone"
-         end
-         # Disabilita warning
-         config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
-         end
-         end
-         end
-         EOF
-         fi
+            post_install do |installer|
+           installer.pods_project.targets.each do |target|
+             target.build_configurations.each do |config|
+                 config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
+                  config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
+            end
+             end
+            end
+          EOF
+          fi
 
-      - name: Pulisci completa e Reinstalla CocoaPods
+      - name: Pulisci e Reinstalla CocoaPods
         run: |
           rm -rf Pods Podfile.lock .symlinks
           rm -rf ~/Library/Developer/Xcode/DerivedData/*
           pod cache clean --all
-          pod deintegrate
           pod install --repo-update --clean-install
         working-directory: ios
 
-      # 7️⃣ Fix manuale per gRPC module maps
-      - name: Fix manuale gRPC module maps
-        run: |
-          # Controlla se esistono i module maps
-          if [ ! -d "ios/Pods/Headers/Private/grpc" ]; then
-            echo "Creazione directory grpc Headers"
-            mkdir -p ios/Pods/Headers/Private/grpc
-          fi
-          
-          # Crea module map vuoto se non esiste
-          if [ ! -f "ios/Pods/Headers/Private/grpc/gRPC-Core.modulemap" ]; then
-            echo "module gRPC_Core {}" > ios/Pods/Headers/Private/grpc/gRPC-Core.modulemap
-          fi
-          
-          # Verifica tutti i module map necessari
-          find ios/Pods -name "*.modulemap" -type f | head -10
-
-      # 8️⃣ Controlla workspace
+      # 9️⃣ Controlla workspace
       - name: Controlla workspace iOS
         run: |
           WORKSPACE="ios/etfguardianclean.xcworkspace"
@@ -115,46 +84,45 @@ jobs:
       - name: Lista schemi disponibili
         run: xcodebuild -workspace ios/etfguardianclean.xcworkspace -list
 
-      # 9️⃣ Build iOS con fix completi
+      # 🔟 Build iOS senza Firebase
       - name: Build iOS non firmato
         run: |
-         xcodebuild \
-           -workspace ios/etfguardianclean.xcworkspace \
-           -scheme "etfguardianclean" \
-           -configuration Debug \
-           -sdk iphoneos \
-           -destination generic/platform=iOS \
-           CODE_SIGN_IDENTITY="" \
-           DEVELOPMENT_TEAM="" \
-           PROVISIONING_PROFILE="" \
-           CODE_SIGNING_REQUIRED=NO \
-           CODE_SIGNING_ALLOWED=NO \
-           -allowProvisioningUpdates \
-           BUILD_DIR=$(pwd)/ios/build \
-           SWIFT_OPTIMIZATION_LEVEL="-Onone" \
-           IPHONEOS_DEPLOYMENT_TARGET="15.0" \
-           GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
-           ONLY_ACTIVE_ARCH=NO \
-           CLANG_ENABLE_MODULES=NO
+          xcodebuild \
+            -workspace ios/etfguardianclean.xcworkspace \
+            -scheme "etfguardianclean" \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination generic/platform=iOS \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -allowProvisioningUpdates \
+            BUILD_DIR=$(pwd)/ios/build \
+            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+            IPHONEOS_DEPLOYMENT_TARGET="15.0" \
+            GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
+            ONLY_ACTIVE_ARCH=NO
         shell: bash
 
-      # 🔟 Crea IPA
+      # 1️⃣1️⃣ Crea IPA
       - name: Crea IPA
         run: |
-         APP_PATH="ios/build/Debug-iphoneos/etfguardianclean.app"
-         if [ ! -d "$APP_PATH" ]; then
-           echo "❌ App non trovata: $APP_PATH"
-           find ios/build -name "*.app" -type d
-           exit 1
-         fi
-         
-         mkdir -p ios/build/Debug-iphoneos/Payload
-         cp -r "$APP_PATH" ios/build/Debug-iphoneos/Payload/
-         cd ios/build/Debug-iphoneos
-         zip -r ETF-Guardian.ipa Payload
+          APP_PATH="ios/build/Debug-iphoneos/etfguardianclean.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ App non trovata: $APP_PATH"
+            find ios/build -name "*.app" -type d
+            exit 1
+          fi
+          
+          mkdir -p ios/build/Debug-iphoneos/Payload
+          cp -r "$APP_PATH" ios/build/Debug-iphoneos/Payload/
+          cd ios/build/Debug-iphoneos
+          zip -r ETF-Guardian.ipa Payload
         shell: bash
 
-      # 1️⃣1️⃣ Upload IPA
+      # 1️⃣2️⃣ Upload IPA
       - uses: actions/upload-artifact@v4
         with:
           name: ETF-Guardian-iOS-IPA
