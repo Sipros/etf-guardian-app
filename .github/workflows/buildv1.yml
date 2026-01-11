@@ -26,7 +26,7 @@ jobs:
       # 5️⃣ Prebuild progetto iOS (genera ios/)
       - run: npx expo prebuild --platform ios --clean
       
-      # 6️⃣ Modifica Podfile per usare use_modular_headers! e deployment target
+      # 6️⃣ Modifica Podfile con tutti i fix necessari
       - name: Configura Podfile per Swift Pods
         run: |
          PODFILE="ios/Podfile"
@@ -38,35 +38,56 @@ jobs:
          ' $PODFILE
          fi
          
-         # Rimuove la linea errata con config.build_settings
+         # Rimuove configurazioni errate
          sed -i '' '/config\.build_settings\["IPHONEOS_DEPLOYMENT_TARGET"\]/d' $PODFILE
          
-         # Aggiunge post_install block se non esiste
+         # Aggiunge post_install block completo
          if ! grep -q "post_install" $PODFILE; then
            cat << 'EOF' >> $PODFILE
 
-         post_install do |installer|
-         installer.pods_project.targets.each do |target|
-         target.build_configurations.each do |config|
-         config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
-         end
-         end
-         end
-         EOF
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      # Deployment target
+      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
+      
+      # Fix per gRPC module maps
+      if target.name.start_with?("gRPC") || target.name.start_with?("BoringSSL")
+        config.build_settings["MODULEMAP_FILE"] = "$(SRCROOT)/#{target.name}.modulemap"
+        config.build_settings["DEFINES_MODULE"] = "YES"
+      end
+      
+      # Fix per Firebase
+      if target.name.start_with?("Firebase")
+        config.build_settings["FRAMEWORK_SEARCH_PATHS"] = "$(inherited) $(PODS_ROOT)/Firebase"
+      end
+      
+      # Fix per Expo modules
+      if target.name.start_with?("EX")
+        config.build_settings["SWIFT_OPTIMIZATION_LEVEL"] = "-Onone"
+      end
+      
+      # Disabilita warning per pods di terze parti
+      config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
+    end
+  end
+end
+EOF
          fi
 
-      - name: Installa CocoaPods
+      - name: Pulisci e Reinstalla CocoaPods
         run: |
-         pod install --repo-update
+          rm -rf Pods Podfile.lock .symlinks
+          pod cache clean --all
+          pod install --repo-update --clean-install
         working-directory: ios
 
-      # 7️⃣ Controlla che il workspace esista
+      # 7️⃣ Controlla workspace
       - name: Controlla workspace iOS
         run: |
           WORKSPACE="ios/etfguardianclean.xcworkspace"
           if [ ! -d "$WORKSPACE" ]; then
             echo "❌ Workspace iOS non trovato: $WORKSPACE"
-            echo "Assicurati di aver eseguito 'npx expo prebuild --platform ios' correttamente."
             exit 1
           else
             echo "✅ Workspace trovato: $WORKSPACE"
@@ -75,7 +96,7 @@ jobs:
       - name: Lista schemi disponibili
         run: xcodebuild -workspace ios/etfguardianclean.xcworkspace -list
 
-      # 8️⃣ Build iOS non firmato
+      # 8️⃣ Build iOS con tutti i fix
       - name: Build iOS non firmato
         run: |
          xcodebuild \
@@ -83,25 +104,39 @@ jobs:
            -scheme "etfguardianclean" \
            -configuration Debug \
            -sdk iphoneos \
+           -destination generic/platform=iOS \
            CODE_SIGN_IDENTITY="" \
            DEVELOPMENT_TEAM="" \
+           PROVISIONING_PROFILE="" \
+           CODE_SIGNING_REQUIRED=NO \
+           CODE_SIGNING_ALLOWED=NO \
            -allowProvisioningUpdates \
            BUILD_DIR=$(pwd)/ios/build \
            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
-           IPHONEOS_DEPLOYMENT_TARGET="15.0"
+           IPHONEOS_DEPLOYMENT_TARGET="15.0" \
+           GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
+           ONLY_ACTIVE_ARCH=NO
         shell: bash
 
-      # 9️⃣ Crea Payload e IPA
+      # 9️⃣ Crea IPA
       - name: Crea IPA
         run: |
+         APP_PATH="ios/build/Debug-iphoneos/etfguardianclean.app"
+         if [ ! -d "$APP_PATH" ]; then
+           echo "❌ App non trovata: $APP_PATH"
+           find ios/build -name "*.app" -type d
+           exit 1
+         fi
+         
          mkdir -p ios/build/Debug-iphoneos/Payload
-         mv ios/build/Debug-iphoneos/etfguardianclean.app ios/build/Debug-iphoneos/Payload/
+         cp -r "$APP_PATH" ios/build/Debug-iphoneos/Payload/
          cd ios/build/Debug-iphoneos
          zip -r ETF-Guardian.ipa Payload
         shell: bash
 
-      # 🔟 Upload IPA come artifact
+      # 🔟 Upload IPA
       - uses: actions/upload-artifact@v4
         with:
           name: ETF-Guardian-iOS-IPA
           path: ios/build/Debug-iphoneos/ETF-Guardian.ipa
+          retention-days: 30
