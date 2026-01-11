@@ -58,9 +58,12 @@ jobs:
         shell: bash
 
       # 9️⃣ Crea Payload e IPA
-      - run: mkdir -p ios/build/Release-iphoneos/Payload
-      - run: mv ios/build/Release-iphoneos/ETF\ Guardian.app ios/build/Release-iphoneos/Payload/
-      - run: zip -r ios/build/Release-iphoneos/ETF-Guardian.ipa ios/build/Release-iphoneos/Payload
+      - run: |
+         mkdir -p ios/build/Release-iphoneos/Payload
+         mv ios/build/Release-iphoneos/etfguardianclean.app ios/build/Release-iphoneos/Payload/
+         cd ios/build/Release-iphoneos
+         zip -r ETF-Guardian.ipa Payload
+        shell: bash
 
       # 🔟 Upload IPA come artifact
       - uses: actions/upload-artifact@v4
