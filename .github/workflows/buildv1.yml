@@ -25,9 +25,19 @@ jobs:
 
       # 5️⃣ Prebuild progetto iOS (genera ios/)
       - run: npx expo prebuild --platform ios --clean
+      # 6️⃣ Modifica Podfile per usare use_modular_headers! e poi installa CocoaPod
+      - name: Configura Podfile per Swift Pods
+        run: |
+         PODFILE="ios/Podfile"
+         # Aggiunge use_modular_headers! subito sotto la piattaforma
+                 sed -i '' '/platform :ios/a\
+                 use_modular_headers!
+                 ' $PODFILE
 
-      # 6️⃣ Installa CocoaPods
-      - run: pod install --repo-update
+      - name: Installa CocoaPods
+        run: |
+         cd ios
+         pod install --repo-update
         working-directory: ios
 
       # 7️⃣ Controlla che il workspace esista
