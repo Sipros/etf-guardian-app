@@ -36,7 +36,6 @@ jobs:
 
       - name: Installa CocoaPods
         run: |
-         cd ios
          pod install --repo-update
         working-directory: ios
 
