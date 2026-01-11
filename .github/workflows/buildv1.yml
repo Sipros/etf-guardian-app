@@ -45,38 +45,34 @@ jobs:
          if ! grep -q "post_install" $PODFILE; then
            cat << 'EOF' >> $PODFILE
 
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      # Deployment target
-      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
-      
-      # Fix specifico per gRPC module maps
-      if target.name.start_with?("gRPC") || target.name.start_with?("BoringSSL")
-        config.build_settings["MODULEMAP_FILE"] = ""
-        config.build_settings["DEFINES_MODULE"] = "NO"
-        config.build_settings["SWIFT_OBJC_INTERFACE_HEADER_NAME"] = ""
-        config.build_settings["SWIFT_OBJC_INTERFACE_HEADER_NAME"] = ""
-        config.build_settings["CLANG_ENABLE_MODULES"] = "NO"
-        config.build_settings["ENABLE_MODULE_VERIFIER"] = "NO"
-      end
-      
-      # Fix per Firebase
-      if target.name.start_with?("Firebase")
-        config.build_settings["FRAMEWORK_SEARCH_PATHS"] = "$(inherited) $(PODS_ROOT)/Firebase"
-      end
-      
-      # Fix per Expo modules
-      if target.name.start_with?("EX")
-        config.build_settings["SWIFT_OPTIMIZATION_LEVEL"] = "-Onone"
-      end
-      
-      # Disabilita warning
-      config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
-    end
-  end
-end
-EOF
+         post_install do |installer|
+         installer.pods_project.targets.each do |target|
+         target.build_configurations.each do |config|
+         # Deployment target
+         config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
+         # Fix specifico per gRPC module maps
+         if target.name.start_with?("gRPC") || target.name.start_with?("BoringSSL")
+         config.build_settings["MODULEMAP_FILE"] = ""
+         config.build_settings["DEFINES_MODULE"] = "NO"
+         config.build_settings["SWIFT_OBJC_INTERFACE_HEADER_NAME"] = ""
+         config.build_settings["SWIFT_OBJC_INTERFACE_HEADER_NAME"] = ""
+         config.build_settings["CLANG_ENABLE_MODULES"] = "NO"
+         config.build_settings["ENABLE_MODULE_VERIFIER"] = "NO"
+         end
+         # Fix per Firebase
+         if target.name.start_with?("Firebase")
+         config.build_settings["FRAMEWORK_SEARCH_PATHS"] = "$(inherited) $(PODS_ROOT)/Firebase"
+         end
+         # Fix per Expo modules
+         if target.name.start_with?("EX")
+         config.build_settings["SWIFT_OPTIMIZATION_LEVEL"] = "-Onone"
+         end
+         # Disabilita warning
+         config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
+         end
+         end
+         end
+         EOF
          fi
 
       - name: Pulisci completa e Reinstalla CocoaPods
