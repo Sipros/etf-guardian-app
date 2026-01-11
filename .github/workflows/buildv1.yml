@@ -1,4 +1,4 @@
-name: iOS-ipa-build (Expo RN non firmato)
+name: iOSbuild 
 
 on:
   workflow_dispatch:
@@ -29,16 +29,10 @@ jobs:
       - name: Configura Podfile per Swift Pods
         run: |
          PODFILE="ios/Podfile"
-         # Aggiunge use_modular_headers! subito sotto la piattaforma
-         sed -i '' '/platform :ios/a\
-         use_modular_headers!
-         ' $PODFILE
-         # Aggiunge deployment target
-         sed -i '' '/platform :ios/a\
-         target 'etfguardianclean' do
-         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-         end
-         ' $PODFILE
+         # Aggiunge use_modular_headers! dopo la linea platform
+         awk '/platform :ios/ { print; print "use_modular_headers!"; next } 1' $PODFILE > temp && mv temp $PODFILE
+         # Aggiunge deployment target configuration
+         awk '/target .* do/ { print; print "  config.build_settings[\"IPHONEOS_DEPLOYMENT_TARGET\"] = \"15.0\""; next } 1' $PODFILE > temp && mv temp $PODFILE
 
       - name: Installa CocoaPods
         run: |
