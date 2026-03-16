@@ -1,123 +1,22 @@
-name: iOSbuild
+name: Scopri Paese Runner
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  build-ios:
-    name: 🎉 Build IPA non firmato
-    runs-on: macos-latest  # macOS necessario per Xcode e iOS build
-
+  get-runner-location:
+    runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout del codice
-      - uses: actions/checkout@v3
-
-      # 2️⃣ Setup Node.js
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      # 3️⃣ Installa Expo CLI
-      - run: npm install -g expo-cli
-
-      # 4️⃣ Installa dipendenze npm
-      - run: npm install
-
-      # 5️⃣ Prebuild progetto iOS (genera ios/)
-      - run: npx expo prebuild --platform ios --clean
-      
-      # 6️⃣ Rimuovi Firebase/gRPC che causano problemi
-      - name: Rimuovi dipendenze problematiche
+      - name: Ricava IP pubblico
+        id: ip
         run: |
-          npm uninstall @react-native-firebase/app @react-native-firebase/firestore firebase
-          
-      # 7️⃣ Prebuild di nuovo senza Firebase
-      - run: npx expo prebuild --platform ios --clean
-      
-      # 8️⃣ Configura Podfile semplificato
-      - name: Configura Podfile base
+          PUBLIC_IP=$(curl -s https://api.ipify.org)
+          echo "IP pubblico: $PUBLIC_IP"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+      - name: Geolocalizza IP
         run: |
-          PODFILE="ios/Podfile"
-          
-          if ! grep -q "use_modular_headers!" $PODFILE; then
-            sed -i '' '/platform :ios/a\
-          use_modular_headers!
-          ' $PODFILE
-          fi
-          
-          if ! grep -q "post_install" $PODFILE; then
-            cat << 'EOF' >> $PODFILE
-
-            post_install do |installer|
-              installer.pods_project.targets.each do |target|
-                target.build_configurations.each do |config|
-                  config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"
-                  config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
-                end
-              end
-            end
-          EOF
-          fi
-
-      - name: Pulisci e Reinstalla CocoaPods
-        run: |
-          rm -rf Pods Podfile.lock .symlinks
-          rm -rf ~/Library/Developer/Xcode/DerivedData/*
-          pod cache clean --all
-          pod install --repo-update --clean-install
-        working-directory: ios
-
-      # 9️⃣ Controlla workspace
-      - name: Controlla workspace iOS
-        run: |
-          WORKSPACE="ios/etfguardianclean.xcworkspace"
-          if [ ! -d "$WORKSPACE" ]; then
-            echo "❌ Workspace iOS non trovato: $WORKSPACE"
-            exit 1
-          else
-            echo "✅ Workspace trovato: $WORKSPACE"
-          fi
-          
-      - name: Lista schemi disponibili
-        run: xcodebuild -workspace ios/etfguardianclean.xcworkspace -list
-
-      # 🔟 Build iOS Release non firmato
-      - name: Build iOS non firmato
-        run: |
-          xcodebuild \
-            -workspace ios/etfguardianclean.xcworkspace \
-            -scheme "etfguardianclean" \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            -allowProvisioningUpdates \
-            BUILD_DIR=$(pwd)/ios/build \
-            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
-            IPHONEOS_DEPLOYMENT_TARGET="15.0" \
-            GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
-            ONLY_ACTIVE_ARCH=NO
-        shell: bash
-
-      # 1️⃣1️⃣ Crea IPA
-      - name: Crea IPA
-        run: |
-          APP_PATH="ios/build/Release-iphoneos/etfguardianclean.app"
-          if [ ! -d "$APP_PATH" ]; then
-            echo "❌ App non trovata: $APP_PATH"
-            find ios/build -name "*.app" -type d
-            exit 1
-          fi
-          
-          mkdir -p ios/build/Release-iphoneos/Payload
-          cp -r "$APP_PATH" ios/build/Release-iphoneos/Payload/
-          cd ios/build/Release-iphoneos
-          zip -r ETF-Guardian.ipa Payload
-        shell: bash
-
-      # 1️⃣2️⃣ Upload IPA
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ETF-Guardian-iOS-IPA
-          path: ios/build/Release-iphoneos/ETF-Guardian.ipa
-          retention-days: 30
+          COUNTRY=$(curl -s https://ipapi.co/$PUBLIC_IP/json/ | jq -r '.country_name')
+          echo "Il runner GitHub Actions si trova in: $COUNTRY"
