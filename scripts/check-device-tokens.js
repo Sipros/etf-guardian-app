@@ -7,7 +7,7 @@ const serviceAccount = JSON.parse(fs.readFileSync('C:\\Users\\Admin\\Downloads\\
 // Initialize Firebase Admin
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: serviceAccount.project_id
+  projectId: serviceAccount.project_id 
 });
 
 const db = admin.firestore();
