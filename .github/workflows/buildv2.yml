@@ -1,6 +1,8 @@
 name: Scopri Paese Runner
 
+# Trigger manuale o push su main
 on:
+  workflow_dispatch:   # permette di lanciare manualmente il workflow
   push:
     branches:
       - main
