@@ -3,7 +3,7 @@ name: Pinnacle Odds Scraper
 on:
   schedule:
     # Ogni 15 minuti (cron: */15 * * * *)
-    - cron: '*/15 * * * *'
+    - cron: '*/60 * * * *'
   workflow_dispatch: # Per esecuzione manuale
 
 jobs:
