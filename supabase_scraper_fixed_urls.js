@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
