@@ -1,35 +1,30 @@
 {
-  "name": "etf-guardian-clean",
+  "name": "pinnacle-odds-scraper",
   "version": "1.0.0",
-  "main": "index.ts",
+  "description": "Pinnacle odds scraper with Supabase integration",
+  "main": "supabase_scraper_fixed_urls.js",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "node supabase_scraper_fixed_urls.js",
+    "test": "node debug_correct_score_mapping.js"
   },
   "dependencies": {
-    "@expo/vector-icons": "^15.0.3",
-    "@react-native-firebase/app": "^23.7.0",
-    "@react-native-firebase/firestore": "^23.7.0",
-    "axios": "^1.13.2",
-    "expo": "~54.0.31",
-    "expo-dev-client": "~6.0.20",
-    "expo-notifications": "~0.32.16",
-    "expo-status-bar": "~3.0.9",
-    "firebase": "^12.7.0",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-chart-kit": "^6.12.0",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-svg": "^15.15.1",
-    "react-native-vector-icons": "^10.3.0"
+    "@supabase/supabase-js": "^2.99.2",
+    "axios": "^1.13.6",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.3.1",
+    "node-cron": "^4.2.1",
+    "puppeteer": "^24.39.1"
   },
-  "devDependencies": {
-    "@types/firebase": "^2.4.32",
-    "@types/react": "~19.1.0",
-    "@types/react-native-vector-icons": "^6.4.18",
-    "typescript": "~5.9.2"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "private": true
+  "keywords": [
+    "scraping",
+    "odds",
+    "pinnacle",
+    "supabase",
+    "football"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
