@@ -23,10 +23,18 @@ jobs:
     - name: Install dependencies
       run: npm install
       
+    - name: Install Chrome
+      run: |
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
     - name: Run scraper
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
       run: node supabase_scraper_fixed_urls.js
       
     - name: Upload logs
