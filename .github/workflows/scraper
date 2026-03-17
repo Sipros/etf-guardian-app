@@ -1,0 +1,39 @@
+name: Pinnacle Odds Scraper
+
+on:
+  schedule:
+    # Ogni 15 minuti (cron: */15 * * * *)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Per esecuzione manuale
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run scraper
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      run: node supabase_scraper_fixed_urls.js
+      
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: scraper-logs
+        path: |
+          logs/
+          *.log
