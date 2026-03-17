@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
@@ -267,10 +267,18 @@ async function insertMatchWithRetry(matchData) {
 
 // Funzione per estrarre match dinamicamente (CON DATE REALI)
 async function extractDynamicMatches(league) {
-    const browser = await puppeteer.launch({ 
+    // Configurazione Puppeteer per GitHub Actions
+    const puppeteerOptions = {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    };
+    
+    // Su GitHub Actions, specifica il path di Chrome
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+    
+    const browser = await puppeteer.launch(puppeteerOptions);
     const page = await browser.newPage();
     
     console.log(`🔍 Estrazione dinamica ${league.name}...`);
@@ -689,10 +697,18 @@ async function runSupabaseScraping() {
     console.log('🚀 INIZIO SCRAPING - URL CORRETTI + CORRECT SCORE');
     console.log(`📋 Campionati: ${LEAGUES_TO_PROCESS.map(l => l.name).join(', ')}`);
     
-    const browser = await puppeteer.launch({ 
+    // Configurazione Puppeteer per GitHub Actions
+    const puppeteerOptions = {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    };
+    
+    // Su GitHub Actions, specifica il path di Chrome
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+    
+    const browser = await puppeteer.launch(puppeteerOptions);
     const page = await browser.newPage();
     
     const summary = {
