@@ -14,7 +14,8 @@ const config = {
         anonKey: process.env.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
     },
     scheduling: {
-        enabled: true,
+        // Disabilitato: GitHub Actions gestisce lo scheduling via workflow cron
+        enabled: false,
         cronPattern: '*/15 * * * *'
     },
     cleanup: {
@@ -78,7 +79,8 @@ function fetchLeagueMatches(league) {
                         .filter(m =>
                             m.type === 'matchup' &&
                             m.participants?.length > 0 &&
-                            !m.participants[0].name.includes('Home Teams')
+                            !m.participants[0].name.includes('Home Teams') &&
+                            !m.participants.some(p => p.name.includes('(Corners)') || p.name.includes('(Bookings)'))
                         )
                         .map(m => {
                             const home = m.participants.find(p => p.alignment === 'home');
