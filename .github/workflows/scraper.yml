@@ -35,7 +35,7 @@ jobs:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
-      run: node supabase_scraper_fixed_urls.js
+      run: node supabase_scraper_fast.js
       
     - name: Upload logs
       if: always()
