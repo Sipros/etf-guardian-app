@@ -72,33 +72,70 @@ class PagePool {
 
 function fetchLeagueMatches(league) {
     const url = `https://guest.api.arcadia.pinnacle.com/0.1/leagues/${league.id}/matchups?brandId=0`;
+    const options = {
+        headers: {
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+    };
     return new Promise((resolve, reject) => {
-        https.get(url, res => {
+        https.get(url, options, res => {
             let data = '';
             res.on('data', c => data += c);
             res.on('end', () => {
                 try {
                     const json = JSON.parse(data);
-                    const matches = json
-                        .filter(m =>
-                            m.type === 'matchup' &&
-                            m.participants?.length > 0 &&
-                            !m.participants[0].name.includes('Home Teams') &&
-                            !m.participants.some(p => p.name.includes('(Corners)') || p.name.includes('(Bookings)'))
-                        )
+                    const allMatchups = json.filter(m =>
+                        m.type === 'matchup' &&
+                        m.participants?.length > 0 &&
+                        !m.participants[0].name.includes('Home Teams')
+                    );
+
+                    // Costruisce mappa corners: "Home|Away" → matchup corners
+                    const cornersMap = new Map();
+                    allMatchups
+                        .filter(m => m.participants.some(p => p.name.includes('(Corners)')))
+                        .forEach(m => {
+                            const home = m.participants.find(p => p.alignment === 'home');
+                            const away = m.participants.find(p => p.alignment === 'away');
+                            if (!home || !away) return;
+                            const key = `${home.name.replace(' (Corners)', '')}|${away.name.replace(' (Corners)', '')}`;
+                            cornersMap.set(key, m);
+                        });
+
+                    // Solo match regolari, ma usa URL corners se disponibile (mostra tutti i mercati)
+                    const matches = allMatchups
+                        .filter(m => !m.participants.some(p => p.name.includes('(Corners)') || p.name.includes('(Bookings)')))
                         .map(m => {
                             const home = m.participants.find(p => p.alignment === 'home');
                             const away = m.participants.find(p => p.alignment === 'away');
                             if (!home || !away) return null;
-                            const slug = `${home.name.toLowerCase().replace(/\s+/g, '-')}-vs-${away.name.toLowerCase().replace(/\s+/g, '-')}`;
+
+                            const homeSlug = home.name.toLowerCase().replace(/\s+/g, '-');
+                            const awaySlug = away.name.toLowerCase().replace(/\s+/g, '-');
+                            const matchUrl = `https://www.pinnacle.com${league.path}${homeSlug}-vs-${awaySlug}/${m.id}/`;
+
+                            const cornersMatch = cornersMap.get(`${home.name}|${away.name}`);
+                            let scrapeUrl;
+                            if (cornersMatch) {
+                                scrapeUrl = `https://www.pinnacle.com${league.path}${homeSlug}-corners-vs-${awaySlug}-corners/${cornersMatch.id}/`;
+                            } else {
+                                scrapeUrl = matchUrl;
+                            }
+
                             return {
                                 matchId: m.id,
                                 teams: `${home.name} vs ${away.name}`,
                                 matchDatetime: new Date(m.startTime).toISOString(),
-                                url: `https://www.pinnacle.com${league.path}${slug}/${m.id}/`
+                                matchUrl,   // URL regolare → salvato nel DB
+                                scrapeUrl   // URL corners se disponibile → usato solo per scraping
                             };
                         })
                         .filter(Boolean);
+
+                    const cornersCount = matches.filter(m => m.scrapeUrl !== m.matchUrl).length;
+                    if (cornersCount > 0) console.log(`  🔲 ${league.name}: ${cornersCount}/${matches.length} match con URL corners`);
                     matches.sort((a, b) => a.matchDatetime.localeCompare(b.matchDatetime));
                     resolve(matches);
                 } catch (e) { reject(e); }
@@ -111,7 +148,7 @@ function fetchLeagueMatches(league) {
 
 async function extractOdds(page, match) {
     try {
-        await page.goto(match.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto(match.scrapeUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
         // Aspetta elemento principale invece di sleep fisso
         await page.waitForSelector('.titleText-BgvECQYfHf', { timeout: 10000 });
@@ -149,9 +186,8 @@ async function extractOdds(page, match) {
                 const container = titleEl.closest('[data-test-id]');
                 if (!container) return;
 
-                if (title === 'Both Teams To Score?') {
-                    container.querySelectorAll('.buttonWrapper-ofFCIiahBj').forEach((el, i) => {
-                        if (i >= 2) return;
+                if (title.includes('Both Teams') || title.includes('Both Teams To Score')) {
+                    container.querySelectorAll('.buttonWrapper-ofFCIiahBj').forEach(el => {
                         const label = el.querySelector('.label-GT4CkXEOFj')?.textContent.trim();
                         const price = el.querySelector('.price-r5BU0ynJha')?.textContent.trim();
                         if (label && price && (label === 'Yes' || label === 'No')) {
@@ -312,7 +348,7 @@ async function runScraping() {
             match_id: r.match.matchId,
             match_name: r.match.teams,
             match_datetime: r.match.matchDatetime,
-            url: r.match.url
+            url: r.match.matchUrl
         }));
         const { error: matchErr } = await supabase
             .from('matches')
