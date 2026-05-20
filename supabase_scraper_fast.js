@@ -46,7 +46,11 @@ class PagePool {
 
     async init() {
         this.available = await Promise.all(
-            Array.from({ length: this.size }, () => this.browser.newPage())
+            Array.from({ length: this.size }, async () => {
+                const page = await this.browser.newPage();
+                await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
+                return page;
+            })
         );
     }
 
