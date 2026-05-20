@@ -149,26 +149,30 @@ function fetchLeagueMatches(league) {
 async function extractOdds(page, match) {
     try {
         await page.goto(match.scrapeUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-        // Aspetta elemento principale invece di sleep fisso
         await page.waitForSelector('.titleText-BgvECQYfHf', { timeout: 10000 });
 
-        // Show All
+        // "Show All": cerca per testo prima (più robusto dei selettori classe)
         await page.evaluate(() => {
-            for (const s of ['button[class*="showAll"]', 'div[class*="showAll"]', '[class*="showAllButton"]']) {
+            for (const el of document.querySelectorAll('button, [role="button"]')) {
+                if (/^show all$/i.test(el.textContent.trim())) { el.click(); return; }
+            }
+            // fallback classi
+            for (const s of ['[data-test-id*="showAll"]', '[class*="showAll"]', '[class*="ShowAll"]', '[class*="show-all"]']) {
                 const el = document.querySelector(s);
                 if (el) { el.click(); return; }
             }
         });
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1500));
 
-        // Clicca tutti i "See more" in un singolo passaggio (uno per ogni sezione)
-        await page.evaluate(() => {
-            for (const btn of document.querySelectorAll('button')) {
-                if (btn.textContent.toLowerCase().includes('see more')) btn.click();
-            }
-        });
-        await new Promise(r => setTimeout(r, 800));
+        // Due passaggi di "See more": il secondo cattura sezioni apparse dopo il primo
+        for (let pass = 0; pass < 2; pass++) {
+            await page.evaluate(() => {
+                for (const btn of document.querySelectorAll('button')) {
+                    if (btn.textContent.toLowerCase().includes('see more')) btn.click();
+                }
+            });
+            await new Promise(r => setTimeout(r, 700));
+        }
 
         const data = await page.evaluate(() => {
             const result = { quote1x2: [], totalMatch: [], bothTeamsToScore: [], correctScore: [] };
@@ -186,7 +190,7 @@ async function extractOdds(page, match) {
                 const container = titleEl.closest('[data-test-id]');
                 if (!container) return;
 
-                if (title.includes('Both Teams') || title.includes('Both Teams To Score')) {
+                if (/both.?teams/i.test(title)) {
                     container.querySelectorAll('.buttonWrapper-ofFCIiahBj').forEach(el => {
                         const label = el.querySelector('.label-GT4CkXEOFj')?.textContent.trim();
                         const price = el.querySelector('.price-r5BU0ynJha')?.textContent.trim();
@@ -196,7 +200,8 @@ async function extractOdds(page, match) {
                     });
                 }
 
-                if (title === 'Total – Match') {
+                // "Total – Match" o "Total - Match" (em-dash o trattino)
+                if (/^total\s*[–\-]\s*match$/i.test(title)) {
                     container.querySelectorAll('.buttonWrapper-ofFCIiahBj').forEach(el => {
                         const label = el.querySelector('.label-GT4CkXEOFj')?.textContent.trim()
                                    || el.querySelector('button')?.getAttribute('title')?.trim();
@@ -209,7 +214,7 @@ async function extractOdds(page, match) {
                     });
                 }
 
-                if (title.includes('Correct Score')) {
+                if (/correct.?score/i.test(title)) {
                     container.querySelectorAll('.buttonWrapper-ofFCIiahBj').forEach(el => {
                         const label = el.querySelector('.label-GT4CkXEOFj')?.textContent.trim();
                         const price = el.querySelector('.price-r5BU0ynJha')?.textContent.trim();
