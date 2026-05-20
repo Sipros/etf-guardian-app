@@ -125,21 +125,13 @@ async function extractOdds(page, match) {
         });
         await new Promise(r => setTimeout(r, 500));
 
-        // Clicca TUTTI i "See more" visibili in un colpo, ripeti se ne appaiono di nuovi
-        let anyClicked = true;
-        while (anyClicked) {
-            anyClicked = await page.evaluate(() => {
-                let count = 0;
-                for (const btn of document.querySelectorAll('button')) {
-                    if (btn.textContent.toLowerCase().includes('see more')) {
-                        btn.click();
-                        count++;
-                    }
-                }
-                return count > 0;
-            });
-            if (anyClicked) await new Promise(r => setTimeout(r, 500));
-        }
+        // Clicca tutti i "See more" in un singolo passaggio (uno per ogni sezione)
+        await page.evaluate(() => {
+            for (const btn of document.querySelectorAll('button')) {
+                if (btn.textContent.toLowerCase().includes('see more')) btn.click();
+            }
+        });
+        await new Promise(r => setTimeout(r, 800));
 
         const data = await page.evaluate(() => {
             const result = { quote1x2: [], totalMatch: [], bothTeamsToScore: [], correctScore: [] };
