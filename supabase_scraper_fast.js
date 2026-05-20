@@ -125,16 +125,20 @@ async function extractOdds(page, match) {
         });
         await new Promise(r => setTimeout(r, 500));
 
-        // See More (max 3 volte)
-        for (let i = 0; i < 3; i++) {
-            const clicked = await page.evaluate(() => {
+        // Clicca TUTTI i "See more" visibili in un colpo, ripeti se ne appaiono di nuovi
+        let anyClicked = true;
+        while (anyClicked) {
+            anyClicked = await page.evaluate(() => {
+                let count = 0;
                 for (const btn of document.querySelectorAll('button')) {
-                    if (btn.textContent.toLowerCase().includes('see more')) { btn.click(); return true; }
+                    if (btn.textContent.toLowerCase().includes('see more')) {
+                        btn.click();
+                        count++;
+                    }
                 }
-                return false;
+                return count > 0;
             });
-            if (!clicked) break;
-            await new Promise(r => setTimeout(r, 500));
+            if (anyClicked) await new Promise(r => setTimeout(r, 500));
         }
 
         const data = await page.evaluate(() => {
