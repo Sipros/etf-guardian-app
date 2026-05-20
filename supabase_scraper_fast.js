@@ -1,7 +1,6 @@
 const puppeteer = require('puppeteer');
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
-const WebSocket = require('ws');
 const cron = require('node-cron');
 require('dotenv').config();
 
@@ -32,9 +31,7 @@ const LEAGUES = [
     { name: 'Ligue 1',        id: 2036, path: '/en/soccer/france-ligue-1/' },
 ];
 
-const supabase = createClient(config.supabase.url, config.supabase.anonKey, {
-    realtime: { transport: WebSocket }
-});
+const supabase = createClient(config.supabase.url, config.supabase.anonKey);
 
 // ── Page Pool ─────────────────────────────────────────────────────────────────
 
